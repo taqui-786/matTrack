@@ -53,7 +53,7 @@ function SignUpForm({ className, ...props }: React.ComponentProps<"div">) {
         email: data.email,
         password: data.password,
         options: {
-          emailRedirectTo: "http://localhost:5173/sign-in",
+          emailRedirectTo: `${import.meta.env.VITE_APP_URL}/sign-in`,
         },
       });
 
