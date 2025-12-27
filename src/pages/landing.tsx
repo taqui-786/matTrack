@@ -8,11 +8,11 @@ import Navbar from "@/components/Navbar";
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-white text-slate-900 selection:bg-primary/10">
+    <div className="flex flex-col min-h-dvh bg-white text-slate-900 selection:bg-primary/10">
       {/* Navbar */}
-<Navbar/>
+      <Navbar />
       {/* Hero Section */}
-      <main className="pt-24 pb-16 sm:pt-32 sm:pb-24">
+      <main className="flex-1 flex flex-col items-center justify-center pt-20 pb-16 sm:pt-28 sm:pb-24">
         <div className="container mx-auto px-4 sm:px-6">
           <div className="mx-auto max-w-3xl text-center">
             <Badge variant={"outline"} className="mb-8">
@@ -36,28 +36,24 @@ export default function LandingPage() {
                 </Link>
               </Button>
             </div>
-
-            {/* Stats Section */}
-            <div className="mt-20 grid grid-cols-2 gap-4 border-t pt-12 text-center sm:grid-cols-4 sm:gap-8">
-              {[
-                { label: "Active Sites", value: "250+" },
-                { label: "Material Flux", value: "Optimized" },
-                { label: "Cost Savings", value: "30%" },
-                { label: "Latency", value: "<100ms" },
-              ].map((stat, i) => (
-                <div key={i} className="flex flex-col gap-1">
-                  <div className="text-2xl font-bold tracking-tight">
-                    {stat.value}
-                  </div>
-                  <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    {stat.label}
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
       </main>
+
+      {/* Footer */}
+      <footer className="py-8 border-t border-slate-100 text-center">
+        <p className="text-sm text-muted-foreground">
+          Built by{" "}
+          <a
+            href="https://taqui-imam.vercel.app"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium text-slate-900 hover:text-primary transition-colors hover:underline"
+          >
+            Md Taqui Imam
+          </a>
+        </p>
+      </footer>
     </div>
   );
 }
