@@ -1,23 +1,21 @@
 import { groq } from "@ai-sdk/groq";
-import { generateText } from "ai";
+import { streamText } from "ai";
 
-export async function handler(event: any) {
-  if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: "Method Not Allowed" };
+export default async function (req: Request) {
+  if (req.method !== "POST") {
+    return new Response("Method Not Allowed", { status: 405 });
   }
 
-  const { companyId, summary } = JSON.parse(event.body);
-
   try {
-
+    const { companyId, summary } = await req.json();
 
     if (!summary) {
       throw new Error("Summary data is missing");
     }
 
     // Generate AI insights based on the data
-    const result = await generateText({
-      model: groq("openai/gpt-oss-20b"),
+    const result = streamText({
+      model: groq("llama-3.3-70b-versatile"),
       system: `
 You are an expert Construction Supply Chain Risk Analyst.
 Your goal is to provide a strategic, actionable assessment of procurement health based on material request data.
@@ -60,22 +58,18 @@ Provide a comprehensive risk analysis following the defined structure.
 `,
     });
 
-
-
-    return {
-      statusCode: 200,
-      headers: { "Content-Type": "text/plain; charset=utf-8" },
-      body: result.text,
-    };
+    return result.toUIMessageStreamResponse();
   } catch (error) {
     console.error("Error in risk-insight function:", error);
-    return {
-      statusCode: 500,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    return new Response(
+      JSON.stringify({
         error: "Failed to generate insights",
         details: error instanceof Error ? error.message : String(error),
       }),
-    };
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
   }
 }

@@ -10,75 +10,86 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useRiskInsight, type MaterialSummary } from "@/hooks/useRiskInsight";
+import { useCompletion } from "@ai-sdk/react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircleIcon, Sparkles } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { supabaseClient } from "@/lib/supabase/supabaseClient";
 
+interface MaterialSummary {
+  totalRequests: number;
+  pendingCount: number;
+  urgentPendingCount: number;
+  approvedCount: number;
+  fulfilledCount: number;
+}
+
 export function AIInsightsDialog({ haveData = false }: { haveData: boolean }) {
   const [open, setOpen] = useState(false);
-  const [companyId, setCompanyId] = useState<string>();
-  const [summary, setSummary] = useState<MaterialSummary>();
+  const { completion, complete, isLoading, error } = useCompletion({
+    api: "/.netlify/functions/risk-insight",
+  });
+
   const [fetched, setFetched] = useState(false);
-  const { data, isLoading, isError, error } = useRiskInsight(
-    companyId,
-    summary
-  );
 
   const handleOpenChange = (isOpen: boolean) => {
     setOpen(isOpen);
     if (isOpen && !fetched && haveData) {
-      async function fetchData() {
-        const user = await supabaseClient.auth.getUser();
-        if (!user.data.user) {
-          throw new Error("User not authenticated");
-        }
-
-        const { data: profile, error: profileError } = await supabaseClient
-          .from("profiles")
-          .select("company_id")
-          .eq("id", user.data.user.id)
-          .maybeSingle();
-
-        if (!profileError && profile?.company_id) {
-          const companyId = profile.company_id;
-
-          // Fetch raw data
-          const { data: requests, error: requestsError } = await supabaseClient
-            .from("material_requests")
-            .select("status, priority")
-            .eq("company_id", companyId);
-
-          if (!requestsError && requests) {
-            // Calculate summary locally
-            const newSummary = {
-              totalRequests: requests.length,
-              pendingCount: requests.filter((r) => r.status === "pending")
-                .length,
-              urgentPendingCount: requests.filter(
-                (r) => r.status === "pending" && r.priority === "urgent"
-              ).length,
-              approvedCount: requests.filter((r) => r.status === "approved")
-                .length,
-              fulfilledCount: requests.filter((r) => r.status === "fulfilled")
-                .length,
-            };
-
-            setSummary(newSummary);
-            setCompanyId(companyId);
-            setFetched(true);
-          }
-        }
-      }
-      fetchData();
-    } else {
-      setFetched(false);
-      setCompanyId(undefined);
-      setSummary(undefined);
+      fetchDataAndGenerate();
+    } else if (!isOpen) {
     }
   };
+
+  const fetchDataAndGenerate = async () => {
+    try {
+      setFetched(true); // Prevent multi-trigger
+      const user = await supabaseClient.auth.getUser();
+      if (!user.data.user) {
+        throw new Error("User not authenticated");
+      }
+
+      const { data: profile, error: profileError } = await supabaseClient
+        .from("profiles")
+        .select("company_id")
+        .eq("id", user.data.user.id)
+        .maybeSingle();
+
+      if (!profileError && profile?.company_id) {
+        const companyId = profile.company_id;
+
+        // Fetch raw data
+        const { data: requests, error: requestsError } = await supabaseClient
+          .from("material_requests")
+          .select("status, priority")
+          .eq("company_id", companyId);
+
+        if (!requestsError && requests) {
+          // Calculate summary locally
+          const newSummary: MaterialSummary = {
+            totalRequests: requests.length,
+            pendingCount: requests.filter((r) => r.status === "pending").length,
+            urgentPendingCount: requests.filter(
+              (r) => r.status === "pending" && r.priority === "urgent"
+            ).length,
+            approvedCount: requests.filter((r) => r.status === "approved")
+              .length,
+            fulfilledCount: requests.filter((r) => r.status === "fulfilled")
+              .length,
+          };
+
+          // Trigger streaming generation
+          await complete("", {
+            body: { companyId, summary: newSummary },
+          });
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching data for insights:", err);
+      // setFetched(false); // maybe allow retry?
+    }
+  };
+  console.log(completion);
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -119,9 +130,9 @@ export function AIInsightsDialog({ haveData = false }: { haveData: boolean }) {
             </div>
           ) : (
             <>
-              {isLoading && (
+              {isLoading && !completion && (
                 <div className="space-y-4">
-                  {/* Loading skeleton */}
+                  {/* Loading skeleton - only show when starting and no content yet */}
                   <div className="space-y-2">
                     <Skeleton className="h-4 w-full" />
                     <Skeleton className="h-4 w-5/6" />
@@ -143,7 +154,7 @@ export function AIInsightsDialog({ haveData = false }: { haveData: boolean }) {
                 </div>
               )}
 
-              {isError && (
+              {error && (
                 <Alert variant="destructive">
                   <HugeiconsIcon icon={AlertCircleIcon} size={20} />
                   <AlertDescription>
@@ -154,11 +165,22 @@ export function AIInsightsDialog({ haveData = false }: { haveData: boolean }) {
                 </Alert>
               )}
 
-              {data && !isLoading && (
+              {/* Show completion even while loading (streaming) */}
+              {completion && (
                 <div className="bg-muted dark:bg-muted/50 rounded-xl p-6 border ">
                   <div className="prose prose-sm dark:prose-invert max-w-none prose-headings:text-slate-900 dark:prose-headings:text-slate-100 prose-table:text-sm">
-                    <ReactMarkdown>{data}</ReactMarkdown>
+                    <ReactMarkdown>{completion}</ReactMarkdown>
                   </div>
+                  {isLoading && (
+                    <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground animate-pulse">
+                      <HugeiconsIcon
+                        icon={Sparkles}
+                        size={12}
+                        className="animate-pulse"
+                      />
+                      Generating insights...
+                    </div>
+                  )}
                 </div>
               )}
             </>
