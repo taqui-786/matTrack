@@ -17,7 +17,7 @@ import { AlertCircleIcon, Sparkles } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { supabaseClient } from "@/lib/supabase/supabaseClient";
 
-export function AIInsightsDialog() {
+export function AIInsightsDialog({ haveData = false }: { haveData: boolean }) {
   const [open, setOpen] = useState(false);
   const [companyId, setCompanyId] = useState<string>();
   const [summary, setSummary] = useState<MaterialSummary>();
@@ -29,7 +29,7 @@ export function AIInsightsDialog() {
 
   const handleOpenChange = (isOpen: boolean) => {
     setOpen(isOpen);
-    if (isOpen && !fetched) {
+    if (isOpen && !fetched && haveData) {
       async function fetchData() {
         const user = await supabaseClient.auth.getUser();
         if (!user.data.user) {
@@ -100,47 +100,68 @@ export function AIInsightsDialog() {
         </DialogHeader>
 
         <div className="mt-4">
-          {isLoading && (
-            <div className="space-y-4">
-              {/* Loading skeleton */}
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-5/6" />
-                <Skeleton className="h-4 w-4/6" />
+          {!haveData ? (
+            <div className="flex flex-col items-center justify-center p-8 text-center bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
+              <div className="bg-slate-100 dark:bg-slate-800 p-3 rounded-full mb-4">
+                <HugeiconsIcon
+                  icon={AlertCircleIcon}
+                  size={24}
+                  className="text-slate-400"
+                />
               </div>
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-3/4" />
-              </div>
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-5/6" />
-                <Skeleton className="h-4 w-2/3" />
-              </div>
-              <div className="flex items-center justify-center py-4 text-sm text-muted-foreground">
-                <HugeiconsIcon icon={Sparkles} size={20} />
-                Analyzing material requests...
-              </div>
+              <h3 className="font-medium text-slate-900 dark:text-slate-100 mb-1">
+                No Data Available
+              </h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 max-w-xs">
+                Add some material requests to generate AI-powered risk insights
+                for your procurement process.
+              </p>
             </div>
-          )}
+          ) : (
+            <>
+              {isLoading && (
+                <div className="space-y-4">
+                  {/* Loading skeleton */}
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-5/6" />
+                    <Skeleton className="h-4 w-4/6" />
+                  </div>
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-3/4" />
+                  </div>
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-5/6" />
+                    <Skeleton className="h-4 w-2/3" />
+                  </div>
+                  <div className="flex items-center justify-center py-4 text-sm text-muted-foreground">
+                    <HugeiconsIcon icon={Sparkles} size={20} />
+                    Analyzing material requests...
+                  </div>
+                </div>
+              )}
 
-          {isError && (
-            <Alert variant="destructive">
-              <HugeiconsIcon icon={AlertCircleIcon} size={20} />
-              <AlertDescription>
-                {error instanceof Error
-                  ? error.message
-                  : "Failed to fetch AI insights. Please try again."}
-              </AlertDescription>
-            </Alert>
-          )}
+              {isError && (
+                <Alert variant="destructive">
+                  <HugeiconsIcon icon={AlertCircleIcon} size={20} />
+                  <AlertDescription>
+                    {error instanceof Error
+                      ? error.message
+                      : "Failed to fetch AI insights. Please try again."}
+                  </AlertDescription>
+                </Alert>
+              )}
 
-          {data && !isLoading && (
-            <div className="bg-muted dark:bg-muted/50 rounded-xl p-6 border ">
-              <div className="prose prose-sm dark:prose-invert max-w-none prose-headings:text-slate-900 dark:prose-headings:text-slate-100 prose-table:text-sm">
-                <ReactMarkdown>{data}</ReactMarkdown>
-              </div>
-            </div>
+              {data && !isLoading && (
+                <div className="bg-muted dark:bg-muted/50 rounded-xl p-6 border ">
+                  <div className="prose prose-sm dark:prose-invert max-w-none prose-headings:text-slate-900 dark:prose-headings:text-slate-100 prose-table:text-sm">
+                    <ReactMarkdown>{data}</ReactMarkdown>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </DialogContent>

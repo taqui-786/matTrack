@@ -32,7 +32,7 @@ function MaterialRequests() {
     setIsExporting(true);
 
     try {
-      // Format data for CSV export
+  
       const csvData = data.map((request) => ({
         Material: request.material_name,
         Quantity: request.quantity,
@@ -51,13 +51,11 @@ function MaterialRequests() {
         Notes: request.notes || "",
       }));
 
-      // Configure CSV export
       const csvConfig = mkConfig({
         useKeysAsHeaders: true,
         filename: `material-requests-${new Date().toISOString().split("T")[0]}`,
       });
 
-      // Generate and download CSV
       const csv = generateCsv(csvConfig)(csvData);
       download(csvConfig)(csv);
     } catch (error) {
@@ -107,7 +105,7 @@ function MaterialRequests() {
                 </>
               )}
             </Button>
-            <AIInsightsDialog />
+            <AIInsightsDialog haveData={data && data.length > 0 || false} />
             <MaterialRequestDialog />
           </div>
         </div>
