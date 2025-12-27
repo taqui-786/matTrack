@@ -27,7 +27,7 @@ interface MaterialSummary {
 
 export function AIInsightsDialog({ haveData = false }: { haveData: boolean }) {
   const [open, setOpen] = useState(false);
-  const { completion, complete, isLoading, error } = useCompletion({
+  const { completion, complete,stop, isLoading, error } = useCompletion({
     api: "/.netlify/functions/risk-insight",
   });
 
@@ -38,12 +38,13 @@ export function AIInsightsDialog({ haveData = false }: { haveData: boolean }) {
     if (isOpen && !fetched && haveData) {
       fetchDataAndGenerate();
     } else if (!isOpen) {
+      stop();
     }
   };
 
   const fetchDataAndGenerate = async () => {
     try {
-      setFetched(true); // Prevent multi-trigger
+      setFetched(true); 
       const user = await supabaseClient.auth.getUser();
       if (!user.data.user) {
         throw new Error("User not authenticated");
@@ -86,10 +87,9 @@ export function AIInsightsDialog({ haveData = false }: { haveData: boolean }) {
       }
     } catch (err) {
       console.error("Error fetching data for insights:", err);
-      // setFetched(false); // maybe allow retry?
+      
     }
   };
-  console.log(completion);
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
