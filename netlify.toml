@@ -1,0 +1,23 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+  functions = "netlify/functions"
+
+# Handle Single Page Application (SPA) routing
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[dev]
+  # Environment variables for local development
+  # These will be loaded when running `netlify dev`
+  
+  # Note: The server function 'risk-insight.ts' is now stateless and doesn't use Supabase.
+  # Client-side Supabase/Groq keys should be in your .env file
+  
+# PRODUCTION DEPLOYMENT CHECKLIST
+# Set these in Netlify Dashboard -> Site Settings -> Environment Variables:
+# - GROQ_API_KEY (Required for AI insights)
+# - VITE_SUPABASE_URL (Required for frontend)
+# - VITE_SUPABASE_ANON_KEY (Required for frontend)
