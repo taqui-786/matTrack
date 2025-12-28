@@ -1,4 +1,4 @@
-# Material Request Tracker using AI 🏗️
+# Material Request Tracker
 
 **Live Demo:** https://mattrack.netlify.app/
 
