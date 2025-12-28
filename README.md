@@ -8,6 +8,13 @@ The goal of this app is to manage material requests cleanly and use AI to give q
 Built with React, Supabase, and Netlify Functions.
 
 ---
+### Testing Credentials
+
+**email**: dronzer.jhar@gmail.com
+
+**password**: 123123123
+
+---
 
 ## What this app does
 
