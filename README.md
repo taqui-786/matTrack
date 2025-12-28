@@ -10,7 +10,7 @@ Built with React, Supabase, and Netlify Functions.
 ---
 ### Testing Credentials
 
-**email**: dronzer.jhar@gmail.com
+**email**: mdtaqui.jhar@gmail.com
 
 **password**: 123123123
 
