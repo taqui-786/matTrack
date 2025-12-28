@@ -7,55 +7,50 @@ export default async function (req: Request) {
   }
 
   try {
-    const { companyId, summary } = await req.json();
+    const { companyId, summary, requests } = await req.json();
 
     if (!summary) {
       throw new Error("Summary data is missing");
     }
 
+    // Format requests for the prompt
+    const requestsList = requests
+      ? requests
+          .map(
+            (r: any) =>
+              `- ${r.material_name}: ${r.quantity} ${r.unit} (${r.status}, ${r.priority})`
+          )
+          .join("\n")
+      : "No individual request data available.";
+
     // Generate AI insights based on the data
     const result = streamText({
       model: groq("llama-3.3-70b-versatile"),
-      system: `
-You are an expert Construction Supply Chain Risk Analyst.
-Your goal is to provide a strategic, actionable assessment of procurement health based on material request data.
-Focus on operational efficiency, potential bottlenecks, and financial implications.
+      system: `You are a concise Construction Procurement Risk Analyst. Your responses must be SHORT and ACTIONABLE.
 
-RESPONSE FORMATTING RULES:
-- Use strictly MARKDOWN format.
-- DO NOT use tables, graphs, or code blocks.
-- Use h3 (###) for section headers.
-- Use bold text (**text**) for key metrics and emphasis.
-- Use bullet points for lists.
-- Keep the tone professional, direct, and insight-driven.
+STRICT RULES:
+- Maximum 150 words total.
+- Use Markdown: ### for headers, **bold** for emphasis, bullet points for lists.
+- NO tables, code blocks, or lengthy explanations.
+- Be direct. No filler phrases.
 
-STRUCTURE YOUR RESPONSE AS FOLLOWS:
+STRUCTURE (keep each section to 1-2 bullet points max):
+### Summary
+One sentence on overall health.
 
-### Executive Summary
-A 2-sentence high-level overview of the current procurement status.
+### Risks
+1-2 critical risks, naming specific materials.
 
-### Key Metrics
-List the core numbers using bullet points with bold values (e.g., - **Total Requests:** 15).
+### Actions
+1-2 immediate next steps.`,
+      prompt: `Analyze this procurement data briefly:
 
-### Critical Risk Assessment
-Identify 2-3 specific risks. For each, provide a brief explanation of why it matters. 
-Example:
-- **High Pending Volume:** 40% of requests are pending, which may delay project timelines.
+**Metrics:** ${summary.totalRequests} total, ${summary.pendingCount} pending (${summary.urgentPendingCount} urgent), ${summary.approvedCount} approved, ${summary.fulfilledCount} fulfilled.
 
-### Strategic Recommendations
-Provide 2-3 actionable steps to improve the workflow immediately.
-`,
-      prompt: `
-Analyze the following material request data for company ${companyId}:
+**Materials:**
+${requestsList}
 
-- Total Requests: ${summary.totalRequests}
-- Pending Requests: ${summary.pendingCount}
-- Urgent Pending Requests: ${summary.urgentPendingCount}
-- Approved Requests: ${summary.approvedCount}
-- Fulfilled Requests: ${summary.fulfilledCount}
-
-Provide a comprehensive risk analysis following the defined structure.
-`,
+Provide a SHORT risk analysis.`,
     });
 
     return result.toUIMessageStreamResponse();

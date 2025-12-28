@@ -27,11 +27,12 @@ interface MaterialSummary {
 
 export function AIInsightsDialog({ haveData = false }: { haveData: boolean }) {
   const [open, setOpen] = useState(false);
-  const { completion, complete,stop, isLoading, error } = useCompletion({
+  const { completion, complete, stop, isLoading, error } = useCompletion({
     api: "/.netlify/functions/risk-insight",
   });
 
   const [fetched, setFetched] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(false);
 
   const handleOpenChange = (isOpen: boolean) => {
     setOpen(isOpen);
@@ -44,7 +45,8 @@ export function AIInsightsDialog({ haveData = false }: { haveData: boolean }) {
 
   const fetchDataAndGenerate = async () => {
     try {
-      setFetched(true); 
+      setIsInitializing(true);
+      setFetched(true);
       const user = await supabaseClient.auth.getUser();
       if (!user.data.user) {
         throw new Error("User not authenticated");
@@ -58,15 +60,12 @@ export function AIInsightsDialog({ haveData = false }: { haveData: boolean }) {
 
       if (!profileError && profile?.company_id) {
         const companyId = profile.company_id;
-
-        // Fetch raw data
         const { data: requests, error: requestsError } = await supabaseClient
           .from("material_requests")
-          .select("status, priority")
+          .select("status, priority, material_name, quantity, unit")
           .eq("company_id", companyId);
 
         if (!requestsError && requests) {
-          // Calculate summary locally
           const newSummary: MaterialSummary = {
             totalRequests: requests.length,
             pendingCount: requests.filter((r) => r.status === "pending").length,
@@ -78,16 +77,15 @@ export function AIInsightsDialog({ haveData = false }: { haveData: boolean }) {
             fulfilledCount: requests.filter((r) => r.status === "fulfilled")
               .length,
           };
-
-          // Trigger streaming generation
+          setIsInitializing(false);
           await complete("", {
-            body: { companyId, summary: newSummary },
+            body: { companyId, summary: newSummary, requests },
           });
         }
       }
     } catch (err) {
       console.error("Error fetching data for insights:", err);
-      
+      setIsInitializing(false);
     }
   };
 
@@ -130,9 +128,17 @@ export function AIInsightsDialog({ haveData = false }: { haveData: boolean }) {
             </div>
           ) : (
             <>
-              {isLoading && !completion && (
+              {isInitializing && (
+                <div className="flex flex-col items-center justify-center py-16">
+                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mb-4"></div>
+                  <p className="text-sm text-muted-foreground">
+                    Getting ready...
+                  </p>
+                </div>
+              )}
+
+              {!isInitializing && isLoading && !completion && (
                 <div className="space-y-4">
-                  {/* Loading skeleton - only show when starting and no content yet */}
                   <div className="space-y-2">
                     <Skeleton className="h-4 w-full" />
                     <Skeleton className="h-4 w-5/6" />
@@ -165,7 +171,6 @@ export function AIInsightsDialog({ haveData = false }: { haveData: boolean }) {
                 </Alert>
               )}
 
-              {/* Show completion even while loading (streaming) */}
               {completion && (
                 <div className="bg-muted dark:bg-muted/50 rounded-xl p-6 border ">
                   <div className="prose prose-sm dark:prose-invert max-w-none prose-headings:text-slate-900 dark:prose-headings:text-slate-100 prose-table:text-sm">
