@@ -1,4 +1,4 @@
-# Material Request Tracker using AI 🏗️
+# Material Request Tracker
 
 **Live Demo:** https://mattrack.netlify.app/
 
@@ -6,6 +6,13 @@ A simple and modern material request tracker built for construction projects.
 The goal of this app is to manage material requests cleanly and use AI to give quick risk insights, without exposing raw data.
 
 Built with React, Supabase, and Netlify Functions.
+
+---
+### Testing Credentials
+
+**email**: mdtaqui.jhar@gmail.com
+
+**password**: 123123123
 
 ---
 
