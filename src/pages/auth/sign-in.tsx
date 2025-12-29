@@ -32,7 +32,7 @@ const loginSchema = z.object({
 type LoginValues = z.infer<typeof loginSchema>;
 
 function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
-  const [loadingText, setLoadingText] = useState("Signing In");
+  const [loadingText, setLoadingText] = useState("Sign In");
   const navigate = useNavigate();
 
   const {
@@ -44,7 +44,7 @@ function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
   });
 
   const onSubmit = async (data: LoginValues) => {
-    setLoadingText("Validating...");
+    setLoadingText("Validating");
     try {
       const { error } = await supabaseClient.auth.signInWithPassword({
         email: data.email,
@@ -55,21 +55,7 @@ function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
         toast.error(error.message);
         return;
       }
-      setLoadingText("Checking Profile...")
-      const session = await supabaseClient.auth.getSession();
-      const { data: isProfileExists } = await supabaseClient
-      .from("profiles")
-      .select("id")
-      .eq("id", session.data.session?.user.id)
-      .maybeSingle();
-      console.log({ isProfileExists });
-      if (!isProfileExists) {
-        setLoadingText("Creating Profile...")
-        await supabaseClient.from("profiles").insert({
-          id: session.data.session?.user.id,
-          company_id: crypto.randomUUID(),
-        });
-      }
+ 
       toast.success("Welcome back!");
       navigate("/");
     } catch (err) {

@@ -21,7 +21,7 @@ import * as z from "zod";
 import { toast } from "sonner";
 import { supabaseClient } from "@/lib/supabase/supabaseClient";
 import { useState } from "react";
-import { Tick } from "@hugeicons/core-free-icons";
+import { LoaderCircle, Tick } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
 const signUpSchema = z
@@ -52,9 +52,6 @@ function SignUpForm({ className, ...props }: React.ComponentProps<"div">) {
       const { error } = await supabaseClient.auth.signUp({
         email: data.email,
         password: data.password,
-        options: {
-          emailRedirectTo: `${import.meta.env.VITE_APP_URL}/sign-in`,
-        },
       });
 
       if (error) {
@@ -136,7 +133,13 @@ function SignUpForm({ className, ...props }: React.ComponentProps<"div">) {
                   className="w-full"
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? "Creating account..." : "Sign Up"}
+                     <HugeiconsIcon
+                    data-submitting={isSubmitting}
+                    icon={LoaderCircle}
+                    size={18}
+                    className="animate-spin data-[submitting=true]:block data-[submitting=false]:hidden"
+                  />
+                  {isSubmitting ? "Creating account" : "Sign Up"}
                 </Button>
                 <FieldDescription className="text-center">
                   Already have an account?{" "}

@@ -32,6 +32,8 @@ import { useUpdateMaterialRequest } from "@/hooks/useUpdateMaterialRequest";
 import type { MaterialRequest } from "@/lib/supabase/types";
 import { toast } from "sonner";
 import { Pencil } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { LoaderCircle } from "@hugeicons/core-free-icons";
 
 const schema = z.object({
   material_name: z.string().min(1, "Material name is required"),
@@ -62,7 +64,11 @@ export function MaterialRequestDialog({
     ? updateMutation.isPending
     : createMutation.isPending;
 
-  const form = useForm<MaterialRequestFormData>({
+  const {
+    formState: { isDirty },
+    reset,
+    ...form
+  } = useForm<MaterialRequestFormData>({
     resolver: zodResolver(schema),
     defaultValues: {
       material_name: "",
@@ -75,7 +81,7 @@ export function MaterialRequestDialog({
 
   const handleOpenChange = (isOpen: boolean) => {
     if (isOpen && request) {
-      form.reset({
+      reset({
         material_name: request.material_name,
         quantity: request.quantity,
         unit: request.unit,
@@ -83,7 +89,7 @@ export function MaterialRequestDialog({
         notes: request.notes || "",
       });
     } else if (isOpen && !request) {
-      form.reset({
+      reset({
         material_name: "",
         quantity: 0,
         unit: "",
@@ -254,11 +260,20 @@ export function MaterialRequestDialog({
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isPending}>
+              <Button
+                type="submit"
+                disabled={isPending || (isEditMode && !isDirty)}
+              >
+                <HugeiconsIcon
+                  data-submitting={isPending}
+                  icon={LoaderCircle}
+                  size={18}
+                  className="animate-spin data-[submitting=true]:block data-[submitting=false]:hidden"
+                />
                 {isPending
                   ? isEditMode
-                    ? "Updating..."
-                    : "Creating..."
+                    ? "Updating"
+                    : "Creating"
                   : isEditMode
                   ? "Update"
                   : "Create"}
