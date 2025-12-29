@@ -109,17 +109,16 @@ Set GROQ_API_KEY in your shell or Netlify environment
 ```sql
 -- Profiles table
 create table public.profiles (
-  id uuid references auth.users not null primary key,
-  email text,
-  company_id text not null,
-  role text default 'user',
-  created_at timestamp with time zone default timezone('utc', now()) not null
+id uuid
+company_id uuid
+created_at timestamp with time zone
 );
 
 -- Material requests table
 create table public.material_requests (
   id uuid default gen_random_uuid() primary key,
   company_id text not null,
+  project_id uuid null,
   material_name text not null,
   quantity numeric not null,
   unit text not null,
@@ -159,6 +158,44 @@ with check (
   )
 );
 ```
+
+-- Function
+When new user Sign-up we will create user profile with id of auth.user.id and company_id as random uuid(), so do this with supabase funciton and make it trigger on on_auth_user_created,
+
+**Handle_user_create() function** 
+```sql
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+as $$
+begin
+  insert into public.profiles (
+    id,
+    company_id
+  )
+  values (
+    new.id,
+    gen_random_uuid()
+  );
+
+  return new;
+end;
+$$;
+```
+
+**Add this extension for the UUID**
+```sql
+create extension if not exists "pgcrypto";
+```
+**Now set-up a trigger**
+```sql
+create trigger on_auth_user_created
+after insert on auth.users
+for each row
+execute function public.handle_new_user();
+```
+
 
 ### 5. Run the App Locally
 
